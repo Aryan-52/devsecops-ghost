@@ -1,27 +1,41 @@
-- name: Setup Node.js
-  uses: actions/setup-node@v4
-  with:
-    node-version: '22'
+name: DevSecOps Pipeline
 
-- name: Install pnpm
-  run: npm install -g pnpm
+on:
+  push:
+    branches: [ main ]
 
-- name: Install Dependencies
-  run: pnpm install
+jobs:
+  build-scan-deploy:
+    runs-on: ubuntu-latest
 
-- name: Snyk Scan
-  uses: snyk/actions/node@master
-  env:
-    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-  with:
-    command: test
-    args: --all-projects
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-- name: Build Docker Image
-  run: docker build -t ghost-app .
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
 
-- name: Trivy Scan
-  uses: aquasecurity/trivy-action@master
-  with:
-    image-ref: 'ghost-app'
-    format: 'table'
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    - name: Install Dependencies
+      run: pnpm install
+
+    - name: Snyk Scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        command: test
+        args: --all-projects
+
+    - name: Build Docker Image
+      run: docker build -t ghost-app .
+
+    - name: Trivy Scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'ghost-app'
+        format: 'table'
