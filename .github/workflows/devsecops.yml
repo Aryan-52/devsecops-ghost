@@ -10,65 +10,65 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-    - name: Install pnpm
-      run: npm install -g pnpm
+      - name: Install pnpm
+        run: npm install -g pnpm
 
-    - name: Install Dependencies
-      run: pnpm install
+      - name: Install Dependencies
+        run: pnpm install
 
-    # ---------------- SNYK SCAN ----------------
-    - name: Snyk Scan
-      uses: snyk/actions/node@master
-      continue-on-error: true
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        command: test
-        args: --all-projects
+      # -------- SNYK SCAN --------
+      - name: Snyk Scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --all-projects
 
-    # ---------------- DOCKER LOGIN ----------------
-    - name: Docker Login
-    uses: docker/login-action@v3
-    with:
-      username: ${{ secrets.DOCKER_USERNAME }}
-      password: ${{ secrets.DOCKER_PASSWORD }}
+      # -------- DOCKER LOGIN --------
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # ---------------- BUILD IMAGE ----------------
-    - name: Build Docker Image
-      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest .
+      # -------- BUILD IMAGE --------
+      - name: Build Docker Image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest .
 
-    # ---------------- TRIVY SCAN ----------------
-    - name: Trivy Scan
-      uses: aquasecurity/trivy-action@master
-      continue-on-error: true
-      with:
-        image-ref: '${{ secrets.DOCKER_USERNAME }}/ghost-app:latest'
-        format: 'table'
+      # -------- TRIVY SCAN --------
+      - name: Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest
+          format: table
 
-    # ---------------- PUSH IMAGE ----------------
-    - name: Push Docker Image
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest
+      # -------- PUSH IMAGE --------
+      - name: Push Docker Image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest
 
-    # ---------------- SLACK SUCCESS ----------------
-    - name: Slack Notification (Success)
-      if: success()
-      run: |
-        curl -X POST -H 'Content-type: application/json' \
-        --data '{"text":"✅ DevSecOps Pipeline SUCCESS 🚀"}' \
-        ${{ secrets.SLACK_WEBHOOK }}
+      # -------- SLACK SUCCESS --------
+      - name: Slack Notification (Success)
+        if: success()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"✅ DevSecOps Pipeline SUCCESS 🚀"}' \
+          ${{ secrets.SLACK_WEBHOOK }}
 
-    # ---------------- SLACK FAILURE ----------------
-    - name: Slack Notification (Failure)
-      if: failure()
-      run: |
-        curl -X POST -H 'Content-type: application/json' \
-        --data '{"text":"❌ DevSecOps Pipeline FAILED 🔥"}' \
-        ${{ secrets.SLACK_WEBHOOK }}
+      # -------- SLACK FAILURE --------
+      - name: Slack Notification (Failure)
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"❌ DevSecOps Pipeline FAILED 🔥"}' \
+          ${{ secrets.SLACK_WEBHOOK }}
