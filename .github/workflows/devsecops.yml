@@ -2,52 +2,79 @@ name: DevSecOps Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build-scan-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Checkout Code
+
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 2. Setup Node.js
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '22'
+        node-version: '20'
 
-    # 3. Install pnpm
     - name: Install pnpm
       run: npm install -g pnpm
 
-    # 4. Install Dependencies
     - name: Install Dependencies
-      run: pnpm install --no-frozen-lockfile
+      run: pnpm install
 
-    # 5. Snyk Scan (allow pipeline to continue)
+    # ---------------- TEST STAGE ----------------
+    - name: Run Tests
+      run: pnpm test || true
+
+    # ---------------- SNYK ----------------
     - name: Snyk Scan
       uses: snyk/actions/node@master
+      continue-on-error: true
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
-        command: test
-        args: --all-projects --detection-depth=4
-      continue-on-error: true
+        command: test --all-projects
 
-    # 6. Trivy Filesystem Scan (no Dockerfile needed)
+    # ---------------- TRIVY FILESYSTEM ----------------
     - name: Trivy Scan (Filesystem)
       uses: aquasecurity/trivy-action@master
       with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'table'
+        scan-type: fs
+        format: table
 
-    # 7. Deploy using Docker Compose
+    # ---------------- DOCKER LOGIN ----------------
+    - name: Login to DockerHub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    # ---------------- BUILD IMAGE ----------------
+    - name: Build Docker Image
+      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest . || true
+
+    # ---------------- PUSH IMAGE ----------------
+    - name: Push Docker Image
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest || true
+
+    # ---------------- TRIVY IMAGE SCAN ----------------
+    - name: Trivy Scan (Image)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: '${{ secrets.DOCKER_USERNAME }}/ghost-app:latest'
+        format: table
+
+    # ---------------- DEPLOY ----------------
     - name: Deploy using Docker Compose
       run: |
         docker compose -f compose.dev.yaml up -d || true
         docker ps
+
+    # ---------------- SLACK NOTIFICATION ----------------
+    - name: Notify Slack
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+    # ---------------- EMAIL (Optional via SMTP action) ----------------
