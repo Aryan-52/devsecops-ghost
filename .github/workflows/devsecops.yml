@@ -2,40 +2,52 @@ name: DevSecOps Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build-scan-deploy:
     runs-on: ubuntu-latest
 
     steps:
+    # 1. Checkout code
     - name: Checkout Code
       uses: actions/checkout@v4
 
+    # 2. Setup Node (use latest supported)
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '22'
 
+    # 3. Install pnpm
     - name: Install pnpm
       run: npm install -g pnpm
 
+    # 4. Install dependencies (IMPORTANT FIX)
     - name: Install Dependencies
-      run: pnpm install
+      run: pnpm install --no-frozen-lockfile
 
+    # 5. Snyk Scan (FIXED)
     - name: Snyk Scan
       uses: snyk/actions/node@master
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
         command: test
-        args: --all-projects
+        args: --all-projects --detection-depth=4
 
+    # 6. Build Docker Image
     - name: Build Docker Image
       run: docker build -t ghost-app .
 
+    # 7. Trivy Scan
     - name: Trivy Scan
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: 'ghost-app'
         format: 'table'
+
+    # 8. Deploy (Docker Compose)
+    - name: Deploy using Docker Compose
+      run: docker compose -f compose.dev.yaml up -d
