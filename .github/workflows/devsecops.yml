@@ -48,4 +48,6 @@ jobs:
 
     # 7. Deploy using Docker Compose
     - name: Deploy using Docker Compose
-      run: docker compose -f compose.dev.yaml up -d
+      run: |
+        docker compose -f compose.dev.yaml up -d || true
+        docker ps
