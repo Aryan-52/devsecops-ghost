@@ -10,20 +10,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # 1. Checkout Code
     - name: Checkout Code
       uses: actions/checkout@v4
 
+    # 2. Setup Node.js
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '22'
 
+    # 3. Install pnpm
     - name: Install pnpm
       run: npm install -g pnpm
 
+    # 4. Install Dependencies
     - name: Install Dependencies
       run: pnpm install --no-frozen-lockfile
 
+    # 5. Snyk Scan (allow pipeline to continue)
     - name: Snyk Scan
       uses: snyk/actions/node@master
       env:
@@ -33,14 +38,14 @@ jobs:
         args: --all-projects --detection-depth=4
       continue-on-error: true
 
-    - name: Build Docker Image
-      run: docker build -t ghost-app -f docker/Dockerfile .
-
-    - name: Trivy Scan
+    # 6. Trivy Filesystem Scan (no Dockerfile needed)
+    - name: Trivy Scan (Filesystem)
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: 'ghost-app'
+        scan-type: 'fs'
+        scan-ref: '.'
         format: 'table'
 
+    # 7. Deploy using Docker Compose
     - name: Deploy using Docker Compose
       run: docker compose -f compose.dev.yaml up -d
