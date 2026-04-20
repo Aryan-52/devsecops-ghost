@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
     - name: Checkout Code
       uses: actions/checkout@v4
 
@@ -34,9 +33,12 @@ jobs:
       with:
         command: test
 
-    # 🔨 BUILD APPLICATION (IMPORTANT FIX)
-    - name: Build Application
-      run: pnpm build
+    # 🔨 BUILD ADMIN (FIX)
+    - name: Build Ghost Admin
+      run: |
+        cd ghost/admin
+        pnpm install
+        pnpm build
 
     # 🐳 DOCKER LOGIN
     - name: Docker Login
@@ -52,31 +54,30 @@ jobs:
         -t ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest \
         -f Dockerfile.production .
 
-    # 🔍 TRIVY SCAN (FILESYSTEM)
-    - name: Trivy Scan (Filesystem)
+    # 🔍 TRIVY SCAN
+    - name: Trivy Scan
       uses: aquasecurity/trivy-action@master
       with:
-        scan-type: 'fs'
+        image-ref: '${{ secrets.DOCKER_USERNAME }}/ghost-app:latest'
         format: 'table'
         exit-code: '0'
 
     # 📦 PUSH IMAGE
     - name: Push Docker Image
-      run: |
-        docker push ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest
 
-    # ✅ SLACK SUCCESS NOTIFICATION
-    - name: Slack Notification (Success)
+    # ✅ SLACK SUCCESS
+    - name: Slack Success
       if: success()
       run: |
         curl -X POST -H 'Content-type: application/json' \
-        --data '{"text":"✅ DevSecOps Pipeline Passed 🚀"}' \
+        --data '{"text":"DevSecOps Pipeline SUCCESS"}' \
         ${{ secrets.SLACK_WEBHOOK }}
 
-    # ❌ SLACK FAILURE NOTIFICATION
-    - name: Slack Notification (Failure)
+    # ❌ SLACK FAILURE
+    - name: Slack Failure
       if: failure()
       run: |
         curl -X POST -H 'Content-type: application/json' \
-        --data '{"text":"❌ DevSecOps Pipeline Failed ❗"}' \
+        --data '{"text":"DevSecOps Pipeline FAILED"}' \
         ${{ secrets.SLACK_WEBHOOK }}
