@@ -33,7 +33,7 @@ jobs:
         with:
           command: test
 
-      # 🔨 BUILD FULL PROJECT (FIX)
+      # 🔨 BUILD FULL PROJECT
       - name: Build Application
         run: pnpm build
 

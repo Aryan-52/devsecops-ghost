@@ -1,34 +1,36 @@
+# Node & build artifacts
 node_modules
-
-.nxcache
-.nx
-
-**/*.log
-
-build
+**/node_modules
 dist
-
+build
+.nx
+.tmp
 coverage
-
 .eslintcache
-
 test-results
-
 tsconfig.tsbuildinfo
 
-Dockerfile
-.dockerignore
-
+# Git
 .git
+.gitignore
+
+# IDE
 .vscode
 .editorconfig
+
+# Logs
+*.log
+
+# Docker files (keep Dockerfile.production)
+Dockerfile
+docker-compose.yml
 compose.yml
 
-docker
-!docker/**/*.entrypoint.sh
-!docker/**/*entrypoint.sh
+# Misc
+.env
+.env.*
 
-ghost/core/core/built/admin
-
-# Ignore local config files (.json and .jsonc)
-ghost/core/config.local.json*
+# Large unnecessary folders
+apps/*/dist
+apps/*/.next
+apps/*/.turbo

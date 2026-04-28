@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ghost-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ghost
+  template:
+    metadata:
+      labels:
+        app: ghost
+    spec:
+      containers:
+        - name: ghost
+          image: aryandandekar/ghost-app:latest   # ✅ correct
+          imagePullPolicy: Always                 # ✅ IMPORTANT
+          ports:
+            - containerPort: 2368

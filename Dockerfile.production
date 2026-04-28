@@ -1,49 +1,5 @@
-# syntax=docker/dockerfile:1
-
-ARG NODE_VERSION=22.18.0
-
-FROM node:${NODE_VERSION}-bookworm-slim
+FROM ghost:5-alpine
 
 ENV NODE_ENV=production
-ENV HUSKY=0
-
-# Install system dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    libjemalloc2 fontconfig && \
-    rm -rf /var/lib/apt/lists/*
-
-# Create ghost user
-RUN groupmod -g 1001 node && \
-    usermod -u 1001 node && \
-    adduser --disabled-password --gecos "" -u 1000 ghost
-
-WORKDIR /home/ghost
-
-# Copy project files
-COPY . .
-
-# Enable pnpm
-RUN corepack enable
-
-# Install dependencies (skip husky, fix sqlite3)
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    apt-get update && \
-    apt-get install -y --no-install-recommends build-essential python3 && \
-    pnpm install --prod --prefer-offline --ignore-scripts && \
-    pnpm rebuild sqlite3 && \
-    apt-get purge -y build-essential python3 && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*
-
-# ✅ FIXED: Create Ghost content structure manually
-RUN mkdir -p content/data content/images content/themes default log && \
-    chown -R ghost:ghost /home/ghost
-
-USER ghost
-
-ENV LD_PRELOAD=libjemalloc.so.2
 
 EXPOSE 2368
-
-CMD ["node", "index.js"]
