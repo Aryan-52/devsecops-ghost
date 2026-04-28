@@ -26,7 +26,7 @@ COPY . .
 # Enable pnpm
 RUN corepack enable
 
-# Install dependencies (fix husky + sqlite3 properly)
+# Install dependencies (skip husky, fix sqlite3)
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     apt-get update && \
     apt-get install -y --no-install-recommends build-essential python3 && \
@@ -36,14 +36,9 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
-# Setup Ghost folders
-RUN mkdir -p default log && \
-    cp -R content base_content && \
-    cp -R content/themes/casper default/casper && \
-    ([ -d content/themes/source ] && cp -R content/themes/source default/source || true) && \
-    chown ghost:ghost /home/ghost && \
-    chown -R nobody:nogroup /home/ghost/* && \
-    chown -R ghost:ghost /home/ghost/content /home/ghost/log
+# ✅ FIXED: Create Ghost content structure manually
+RUN mkdir -p content/data content/images content/themes default log && \
+    chown -R ghost:ghost /home/ghost
 
 USER ghost
 
