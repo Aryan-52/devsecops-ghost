@@ -19,7 +19,8 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          [cite_start]command: test # Blocks deployment if high-risk bugs are found [cite: 67, 204]
+          args: --all-projects
+          command: test
 
       # 🐳 DOCKER LOGIN
       - name: Docker Login
