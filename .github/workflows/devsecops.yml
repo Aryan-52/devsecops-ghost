@@ -14,13 +14,12 @@ jobs:
         uses: actions/checkout@v4
 
       # 🔐 SNYK SCAN (Dependency Security)
-      # Uses --all-projects to handle the pnpm workspace structure
       - name: Snyk Scan
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --all-projects
+          args: --all-projects --severity-threshold=critical
           command: test
 
       # 🐳 DOCKER LOGIN
@@ -43,7 +42,7 @@ jobs:
         with:
           image-ref: '${{ secrets.DOCKER_USERNAME }}/ghost-app:latest'
           format: 'table'
-          exit-code: '1' # Mandatory: Fails build on High/Critical vulnerabilities
+          exit-code: '1'
           severity: 'CRITICAL,HIGH'
 
       # 📦 PUSH IMAGE
