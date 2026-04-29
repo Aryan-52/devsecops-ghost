@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: ghost-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: ghost
@@ -14,7 +14,13 @@ spec:
     spec:
       containers:
         - name: ghost
-          image: aryandandekar/ghost-app:latest   # ✅ correct
-          imagePullPolicy: Always                 # ✅ IMPORTANT
+          image: ghost:5-alpine
           ports:
             - containerPort: 2368
+          env:
+            - name: url
+              value: "http://localhost:30007"
+            # This is the "magic" fix: Ghost needs to know it's in development
+            # to use SQLite without complex production config files.
+            - name: NODE_ENV
+              value: "development"

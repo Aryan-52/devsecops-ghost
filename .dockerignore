@@ -1,8 +1,4 @@
-# Node & build artifacts
 node_modules
-**/node_modules
-dist
-build
 .nx
 .tmp
 coverage
@@ -10,27 +6,23 @@ coverage
 test-results
 tsconfig.tsbuildinfo
 
-# Git
 .git
 .gitignore
 
-# IDE
 .vscode
 .editorconfig
 
-# Logs
 *.log
 
-# Docker files (keep Dockerfile.production)
 Dockerfile
 docker-compose.yml
 compose.yml
 
-# Misc
 .env
 .env.*
 
-# Large unnecessary folders
 apps/*/dist
 apps/*/.next
 apps/*/.turbo
+
+k8s
