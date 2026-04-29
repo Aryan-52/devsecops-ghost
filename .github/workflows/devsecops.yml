@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - [cite_start]develop  # Meets GitFlow requirements [cite: 17, 153]
+      - develop
 
 jobs:
   build-scan-deploy:
@@ -19,7 +19,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          [cite_start]command: test # Blocks deployment if high-risk bugs are found [cite: 67, 204]
+          command: test # Pipeline STOPS here if vulnerabilities exist
 
       # 🐳 DOCKER LOGIN
       - name: Docker Login
@@ -41,15 +41,15 @@ jobs:
         with:
           image-ref: '${{ secrets.DOCKER_USERNAME }}/ghost-app:latest'
           format: 'table'
-          [cite_start]exit-code: '1' # Mandatory: Fails pipeline on High/Critical risks [cite: 68, 204]
+          exit-code: '1' # Fails the build if vulnerabilities are found
           severity: 'CRITICAL,HIGH'
 
       # 📦 PUSH IMAGE
       - name: Push Docker Image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest
 
-      # 🚀 DEPLOYMENT NOTIFICATION
-      - name: Deployment Status
+      # 🚀 DEPLOYMENT STATUS
+      - name: Deployment Success
         run: |
-          echo "Vulnerability scans passed. Ghost image is secure."
-          echo "Triggering Kubernetes Rolling Update via Terraform..."
+          echo "Security Gates Passed. Image pushed to DockerHub."
+          echo "Infrastructure is managed via Terraform locally."
