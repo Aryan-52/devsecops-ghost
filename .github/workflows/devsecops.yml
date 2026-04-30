@@ -28,11 +28,20 @@ jobs:
       # 🧪 FUNCTIONAL TESTING (The Selenium Stage)
       - name: Run Selenium Functional Test
         run: |
-          echo "Launching Headless Chrome for Functional Testing..."
-          # This simulates the Selenium suite checking if the login page loads
+          echo "Launching Ghost container for Testing..."
           docker run -d -p 2368:2368 --name test-app ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest
-          sleep 15
-          curl -s http://localhost:2368 | grep "Ghost" && echo "Selenium Test: PASSED" || (echo "Selenium Test: FAILED" && exit 1)
+          
+          echo "Waiting for Ghost to initialize (this can take 30-60s)..."
+          timeout 60s bash -c 'until curl -s localhost:2368; do sleep 5; done'
+          
+          echo "Checking for 'Ghost' in the landing page..."
+          if curl -s localhost:2368 | grep -q "Ghost"; then
+            echo "Selenium Functional Test: PASSED ✅"
+          else
+            echo "Selenium Functional Test: FAILED ❌"
+            docker logs test-app
+            exit 1
+          fi
           docker stop test-app && docker rm test-app
 
       # 🔍 SECURITY GATE 2: Trivy Image Scan
