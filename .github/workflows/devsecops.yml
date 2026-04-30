@@ -11,7 +11,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 🔐 SECURITY GATE 1: Snyk Dependency Scan
+      # 🔐 SECURITY GATE 1: Snyk Scan
       - name: Snyk Scan
         uses: snyk/actions/node@master
         continue-on-error: true 
@@ -25,26 +25,26 @@ jobs:
       - name: Build Docker Image
         run: docker build -t ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest -f Dockerfile.production .
 
-      # 🧪 FUNCTIONAL TESTING (The Selenium Stage)
+      # 🧪 FUNCTIONAL TESTING (Wait for Ghost logic)
       - name: Run Selenium Functional Test
         run: |
-          echo "Launching Ghost container for Testing..."
           docker run -d -p 2368:2368 --name test-app ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest
-          
-          echo "Waiting for Ghost to initialize (this can take 30-60s)..."
-          timeout 60s bash -c 'until curl -s localhost:2368; do sleep 5; done'
-          
-          echo "Checking for 'Ghost' in the landing page..."
-          if curl -s localhost:2368 | grep -q "Ghost"; then
-            echo "Selenium Functional Test: PASSED ✅"
-          else
-            echo "Selenium Functional Test: FAILED ❌"
-            docker logs test-app
-            exit 1
-          fi
-          docker stop test-app && docker rm test-app
+          echo "Waiting for Ghost to wake up..."
+          # Retries every 5s for up to 60s
+          for i in {1..12}; do
+            if curl -s localhost:2368 | grep -q "Ghost"; then
+              echo "Selenium Test: PASSED ✅"
+              docker stop test-app && docker rm test-app
+              exit 0
+            fi
+            echo "Still waiting... ($i/12)"
+            sleep 5
+          done
+          echo "Selenium Test: FAILED ❌ (App did not start in time)"
+          docker logs test-app
+          exit 1
 
-      # 🔍 SECURITY GATE 2: Trivy Image Scan
+      # 🔍 SECURITY GATE 2: Trivy Scan
       - name: Trivy Scan
         uses: aquasecurity/trivy-action@master
         with:
@@ -52,7 +52,7 @@ jobs:
           format: 'table'
           severity: 'CRITICAL,HIGH'
 
-      # 📦 PUSH TO DOCKER HUB
+      # 📦 PUSH
       - name: Docker Login & Push
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
