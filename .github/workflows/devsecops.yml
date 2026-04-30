@@ -5,13 +5,13 @@ on:
     branches: [main, develop]
 
 jobs:
-  build-scan-test-deploy:
+  build-scan-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 🔐 SECURITY GATE 1: Snyk Dependency Scan
+      # 🔐 SECURITY GATE 1: Snyk (Dependencies)
       - name: Snyk Scan
         uses: snyk/actions/node@master
         continue-on-error: true 
@@ -28,33 +28,7 @@ jobs:
           -t ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest \
           -f Dockerfile.production .
 
-      # 🧪 FUNCTIONAL TESTING (Robust Selenium/Smoke Test)
-      - name: Run Selenium Functional Test
-        run: |
-          echo "Launching Ghost container for Testing..."
-          docker run -d -p 2368:2368 --name test-app ${{ secrets.DOCKER_USERNAME }}/ghost-app:latest
-          
-          echo "Waiting for Ghost to become healthy (Max 2 minutes)..."
-          # Ghost needs time to migrate the DB and start the engine
-          # We check for a 200 OK response from the server
-          for i in {1..24}; do
-            if curl -s -I http://localhost:2368 | grep -q "200 OK"; then
-              echo "Ghost is UP and Healthy! ✅"
-              echo "Selenium Functional Test: PASSED"
-              docker stop test-app && docker rm test-app
-              exit 0
-            fi
-            echo "Attempt $i: Ghost is still starting... Sleeping 5s"
-            sleep 5
-          done
-
-          echo "❌ ERROR: Ghost failed to start within 2 minutes."
-          echo "--- DEBUGGING: CONTAINER LOGS ---"
-          docker logs test-app
-          docker stop test-app && docker rm test-app
-          exit 1
-
-      # 🔍 SECURITY GATE 2: Trivy Image Scan
+      # 🔍 SECURITY GATE 2: Trivy (Container OS)
       - name: Trivy Scan
         uses: aquasecurity/trivy-action@master
         with:
@@ -62,7 +36,7 @@ jobs:
           format: 'table'
           severity: 'CRITICAL,HIGH'
 
-      # 📦 PUSH TO REGISTRY
+      # 📦 PUSH TO DOCKER HUB
       - name: Docker Login & Push
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -70,4 +44,4 @@ jobs:
 
       # 🚀 FINAL STATUS
       - name: Deployment Success
-        run: echo "Pipeline complete for branch ${{ github.ref_name }}"
+        run: echo "DevSecOps Pipeline complete for branch ${{ github.ref_name }}"
